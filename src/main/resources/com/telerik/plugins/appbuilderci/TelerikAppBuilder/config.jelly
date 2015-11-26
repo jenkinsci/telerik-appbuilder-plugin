@@ -1,0 +1,54 @@
+<?jelly escape-by-default='true'?>
+<j:jelly xmlns:j="jelly:core" xmlns:st="jelly:stapler" xmlns:d="jelly:define" xmlns:l="/lib/layout" xmlns:t="/lib/hudson" xmlns:f="/lib/form">
+	<f:entry title="ApplicationId" field="applicationId" description="Add the application Id">
+		<f:textbox />
+	</f:entry>
+	<f:entry title="ProjectName" field="projectName" description="Add the project name">
+		<f:textbox />
+	</f:entry>
+	<f:entry title="Access Token" field="accessToken" help="help-apptoken.html">
+		<f:password />
+	</f:entry>
+	<f:section title="Platform Build Settings">
+		<f:entry title="Configuration" field="configuration">
+			<f:entry>
+				<f:radio name="configuration" title="Debug" value="Debug" checked="${instance.configuration == 'Debug'}" />
+			</f:entry>
+			<f:entry>
+				<f:radio name="configuration" title="Release" value="Release" checked="${instance.configuration == 'Release'}" />
+			</f:entry>
+		</f:entry>
+		<f:optionalBlock 
+            name="buildSettingsiOS"
+            field="buildSettingsiOS"
+            title="Build for iOS"
+            checked="${instance.showBuildSettingsiOS}" 
+            help="help-ios.html">
+			<f:entry title="Mobile Provision Identifier" field="mobileProvisionIdentifieriOS">
+                    <f:textbox />
+                </f:entry>
+                <f:entry title="Codesigning Identity" field="codesigningIdentityiOS">
+                    <f:textbox />
+            </f:entry>
+		</f:optionalBlock>
+		<f:optionalBlock 
+            name="buildSettingsAndroid" 
+            field="buildSettingsAndroid" 
+            title="Build for Android" 
+            checked="${instance.showBuildSettingsAndroid}"
+            help="help-android.html">
+            <f:advanced title="Advanced Settings">
+                <f:entry title="Codesigning Identity" field="codesigningIdentityAndroid">
+                    <f:textbox />
+                </f:entry>
+            </f:advanced>
+		</f:optionalBlock>
+		<f:optionalBlock 
+            name="buildSettingsWP"
+            title="Build for Windows Phone" 
+            checked="${instance.buildSettingsWP}"
+            inline="true"
+            help="help-wp.html" 
+        /> 
+	</f:section>
+</j:jelly>
