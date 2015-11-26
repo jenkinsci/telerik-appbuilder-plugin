@@ -35,12 +35,7 @@ import java.util.List;
 import java.nio.file.*;
 
 public class TelerikAppBuilder extends Builder {
-
-	private final String baseURI = "http://localhost/appbuilder/api";
-	// private final String baseURI =
-	// "https://sit-platform.telerik.rocks/appbuilder/api";
-	// private final String baseURI =
-	// "https://platform.telerik.com/appbuilder/api";
+	
 	private String applicationId;
 	private String projectName;
 	private Secret accessToken;
@@ -51,7 +46,6 @@ public class TelerikAppBuilder extends Builder {
 	private BuildSettingsAndroid buildSettingsAndroid;
 	private boolean buildSettingsWP;
 
-	// Fields in config.jelly must match the parameter names in the
 	// "DataBoundConstructor"
 	@DataBoundConstructor
 	public TelerikAppBuilder(String applicationId, String projectName, Secret accessToken, String configuration,
@@ -69,6 +63,7 @@ public class TelerikAppBuilder extends Builder {
 	/**
 	 * We'll use this from the <tt>config.jelly</tt>.
 	 */
+	
 	public String getApplicationId() {
 		return applicationId;
 	}
@@ -129,6 +124,10 @@ public class TelerikAppBuilder extends Builder {
 		return buildSettingsWP;
 	}
 
+	private String getServerBaseUrl() {
+		return getDescriptor().getServerBaseURI();
+	}
+	
 	private boolean validatePluginConfiguration() {
 		if (applicationId == null || projectName == null || accessToken == null || applicationId.isEmpty()
 				|| projectName.isEmpty() || Secret.toString(accessToken).isEmpty()) {
@@ -143,18 +142,12 @@ public class TelerikAppBuilder extends Builder {
 		client.setChunkedEncodingSize(1024);
 		return client;
 	}
-
+	
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
 			throws IOException, InterruptedException {
 
 		PrintStream logger = listener.getLogger();
-
-		if (this.buildSettingsWP) {
-			logger.println("buildSettingsWP = true");
-		} else {
-			logger.println("buildSettingsWP = false");
-		}
 
 		// Get Workspace root directory
 		FilePath projectRoot = build.getWorkspace();
@@ -177,7 +170,7 @@ public class TelerikAppBuilder extends Builder {
 		String contentDisposition = "attachment; filename=\"" + file.getName() + "\"";
 		Client client = getWebClient();
 
-		ClientResponse uploadPacakgeResponse = client.resource(baseURI)
+		ClientResponse uploadPacakgeResponse = client.resource(this.getServerBaseUrl())
 				.path(String.format("apps/%s/projects/importProject/%s", this.applicationId, this.projectName))
 				.accept(MediaType.APPLICATION_JSON)
 				.type(MediaType.APPLICATION_OCTET_STREAM)
@@ -204,7 +197,7 @@ public class TelerikAppBuilder extends Builder {
 		StopWatch watch = new StopWatch();
 		watch.start();
 
-		ClientResponse response = client.resource(baseURI)
+		ClientResponse response = client.resource(this.getServerBaseUrl())
 				.path(String.format("apps/%s/build/%s", this.applicationId, this.projectName))
 				.accept(MediaType.APPLICATION_JSON)
 				.type(MediaType.APPLICATION_JSON)
@@ -257,7 +250,7 @@ public class TelerikAppBuilder extends Builder {
 			}
 
 			if (pathFormat.equalsIgnoreCase("LocalPath")) {
-				itemUrl = UriBuilder.fromPath(this.baseURI)
+				itemUrl = UriBuilder.fromPath(this.getServerBaseUrl())
 									.path(String.format("apps/%s/files/%s/%s", 
 											this.applicationId, 
 											this.projectName, 
@@ -338,6 +331,9 @@ public class TelerikAppBuilder extends Builder {
 
 	@Extension
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
+
+		private String serverBaseURI = "https://platform.telerik.com/appbuilder/api";
+		
 		public DescriptorImpl() {
 			load();
 		}
@@ -349,6 +345,10 @@ public class TelerikAppBuilder extends Builder {
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
 			return true;
 		}
+		
+		public String getServerBaseURI() {
+	        return this.serverBaseURI;
+	    }
 
 		public String getDisplayName() {
 			return "Telerik AppBuilder Build Step";
@@ -356,6 +356,7 @@ public class TelerikAppBuilder extends Builder {
 
 		@Override
 		public boolean configure(StaplerRequest req, JSONObject formData) throws FormException {
+			this.serverBaseURI = formData.getString("serverBaseURI");
 			save();
 			return super.configure(req, formData);
 		}
