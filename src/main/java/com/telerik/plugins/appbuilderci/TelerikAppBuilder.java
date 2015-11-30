@@ -35,9 +35,10 @@ import java.util.List;
 import java.nio.file.*;
 
 public class TelerikAppBuilder extends Builder {
+
+	private final String projectName = "JenkinsCI";
 	
 	private String applicationId;
-	private String projectName;
 	private Secret accessToken;
 	private String configuration;
 
@@ -48,10 +49,9 @@ public class TelerikAppBuilder extends Builder {
 
 	// "DataBoundConstructor"
 	@DataBoundConstructor
-	public TelerikAppBuilder(String applicationId, String projectName, Secret accessToken, String configuration,
+	public TelerikAppBuilder(String applicationId, Secret accessToken, String configuration,
 			BuildSettingsiOS buildSettingsiOS, BuildSettingsAndroid buildSettingsAndroid, boolean buildSettingsWP) {
 		this.applicationId = applicationId;
-		this.projectName = projectName;
 		this.accessToken = accessToken;
 		this.configuration = configuration;
 
@@ -66,10 +66,6 @@ public class TelerikAppBuilder extends Builder {
 	
 	public String getApplicationId() {
 		return applicationId;
-	}
-
-	public String getProjectName() {
-		return projectName;
 	}
 
 	public Secret getAccessToken() {
