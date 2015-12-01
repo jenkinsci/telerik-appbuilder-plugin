@@ -3,6 +3,8 @@ package com.telerik.plugins.appbuilderci;
 import java.nio.file.*;
 import java.io.PrintStream;
 import java.io.IOException;
+import java.util.function.Consumer;
+import java.util.function.Predicate;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -27,31 +29,42 @@ public class PackageManager {
         return zipFilePath;
     }
     
-    private void pack(Path sourceDirPath, Path zipFilePath) throws IOException {
+    private void pack(final Path sourceDirPath, Path zipFilePath) throws IOException {
         final PathFilteringService pathFilteringService = new PathFilteringService(Paths.get(sourceDirPath.toString(), ".abignore"));
-        ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(Files.createFile(zipFilePath)));
+        final ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(Files.createFile(zipFilePath)));
         try {
             Files.walk(sourceDirPath)
-            .filter(path -> {
-                boolean isExcluded = pathFilteringService.isFileExcluded(path);
-                if(isExcluded){
-                	this.logger.println(String.format("Excluding File : %s", path));
-                }
-                return !isExcluded;
-            })
-            .filter(path -> !Files.isDirectory(path))
-            .forEach(path -> {
-            	Path relativePath = sourceDirPath.relativize(path); 
-                ZipEntry zipEntry = new ZipEntry(relativePath.toString());
-                try {
-                    zs.putNextEntry(zipEntry);
-                    zs.write(Files.readAllBytes(path));
-                    zs.closeEntry();
-                } catch (Exception e) {
-                    System.err.println(e);
-                }
-            	this.logger.println(String.format("Packaging File : %s", relativePath.toString()));
-            });
+            .filter(new Predicate<Path>() {
+				@Override
+				public boolean test(Path path) {
+				    boolean isExcluded = pathFilteringService.isFileExcluded(path);
+				    if(isExcluded){
+				    	PackageManager.this.logger.println(String.format("Excluding File : %s", path));
+				    }
+				    return !isExcluded;
+				}
+			})
+            .filter(new Predicate<Path>() {
+				@Override
+				public boolean test(Path path) {
+					return !Files.isDirectory(path);
+				}
+			})
+            .forEach(new Consumer<Path>() {
+				@Override
+				public void accept(Path path) {
+					Path relativePath = sourceDirPath.relativize(path); 
+				    ZipEntry zipEntry = new ZipEntry(relativePath.toString());
+				    try {
+				        zs.putNextEntry(zipEntry);
+				        zs.write(Files.readAllBytes(path));
+				        zs.closeEntry();
+				    } catch (Exception e) {
+				        System.err.println(e);
+				    }
+					PackageManager.this.logger.println(String.format("Packaging File : %s", relativePath.toString()));
+				}
+			});
         } finally {
             zs.close();
         }

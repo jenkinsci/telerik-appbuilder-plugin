@@ -31,7 +31,6 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
-
 import java.nio.file.*;
 
 public class TelerikAppBuilder extends Builder {
@@ -225,15 +224,18 @@ public class TelerikAppBuilder extends Builder {
 		return buildResult.getJSONObject("ResultsByTarget").getJSONObject("Build");
 	}
 
-	private boolean downloadBuildResults(JSONObject buildResult, String workspaceDir, PrintStream logger)
+	private boolean downloadBuildResults(JSONObject buildResult, String workspaceDir, final PrintStream logger)
 			throws IOException {
-		Path outputFolderPath = Paths.get(workspaceDir, "BuildOutputs").toAbsolutePath();
+		final Path outputFolderPath = Paths.get(workspaceDir, "BuildOutputs").toAbsolutePath();
 		if (outputFolderPath.toFile().exists()) {
 			FileUtils.deleteDirectory(outputFolderPath.toFile());
 		}
 		Files.createDirectory(outputFolderPath);
 
-		this.getBuildObject(buildResult).getJSONArray("Items").stream().forEach(obj -> {
+		Object[] buildResultItems = this.getBuildObject(buildResult).getJSONArray("Items").stream().toArray();
+		
+		for(Object obj : buildResultItems)
+		{
 			JSONObject item = (JSONObject) obj;
 			String itemUrl = item.getString("FullPath");
 			String fileName = item.getString("Filename");
@@ -246,17 +248,18 @@ public class TelerikAppBuilder extends Builder {
 			}
 
 			if (pathFormat.equalsIgnoreCase("LocalPath")) {
-				itemUrl = UriBuilder.fromPath(this.getServerBaseUrl())
+				itemUrl = UriBuilder.fromPath(TelerikAppBuilder.this.getServerBaseUrl())
 									.path(String.format("apps/%s/files/%s/%s", 
-											this.applicationId, 
-											this.projectName, 
+											TelerikAppBuilder.this.applicationId, 
+											TelerikAppBuilder.this.projectName, 
 											itemUrl.replace('\\', '/')))
 									.build()
 									.toString();
 			}
 
-			this.downloadAppPackage(outputFolderPath, itemUrl, fileName, extension, logger);
-		});
+			TelerikAppBuilder.this.downloadAppPackage(outputFolderPath, itemUrl, fileName, extension, logger);
+		}
+		
 		return true;
 	}
 
