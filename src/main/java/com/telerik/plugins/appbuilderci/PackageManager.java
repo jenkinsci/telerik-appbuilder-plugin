@@ -29,7 +29,7 @@ public class PackageManager {
         return zipFilePath;
     }
     
-    private void pack(final Path sourceDirPath, Path zipFilePath) throws IOException {
+    private void pack(final Path sourceDirPath, final Path zipFilePath) throws IOException {
         final PathFilteringService pathFilteringService = new PathFilteringService(Paths.get(sourceDirPath.toString(), ".abignore"));
         final ZipOutputStream zs = new ZipOutputStream(Files.newOutputStream(Files.createFile(zipFilePath)));
         try {
@@ -37,17 +37,14 @@ public class PackageManager {
             .filter(new Predicate<Path>() {
 				@Override
 				public boolean test(Path path) {
-				    boolean isExcluded = pathFilteringService.isFileExcluded(path);
+				    boolean isExcluded = pathFilteringService.isFileExcluded(path) || 
+							    		 zipFilePath.toString().equalsIgnoreCase(path.toString()) || 
+							    		 path.toString().contains(Constants.OutputFolderName);
+				    
 				    if(isExcluded){
 				    	PackageManager.this.logger.println(String.format("Excluding File : %s", path));
 				    }
 				    return !isExcluded;
-				}
-			})
-            .filter(new Predicate<Path>() {
-				@Override
-				public boolean test(Path path) {
-					return !Files.isDirectory(path);
 				}
 			})
             .forEach(new Consumer<Path>() {

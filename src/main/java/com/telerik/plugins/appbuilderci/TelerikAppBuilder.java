@@ -187,7 +187,9 @@ public class TelerikAppBuilder extends Builder {
 		Client client = getWebClient();
 
 		logger.println(
-				String.format("Start Building for %s", buildProperties.getJSONObject("Properties").get("Platform")));
+				String.format("Start Building for %s, Configuration: %s", 
+						buildProperties.getJSONObject("Properties").get("Platform"), 
+						buildProperties.getJSONObject("Properties").get("Configuration")));
 
 		StopWatch watch = new StopWatch();
 		watch.start();
@@ -226,7 +228,7 @@ public class TelerikAppBuilder extends Builder {
 
 	private boolean downloadBuildResults(JSONObject buildResult, String workspaceDir, final PrintStream logger)
 			throws IOException {
-		final Path outputFolderPath = Paths.get(workspaceDir, "BuildOutputs").toAbsolutePath();
+		final Path outputFolderPath = Paths.get(workspaceDir, Constants.OutputFolderName).toAbsolutePath();
 		if (outputFolderPath.toFile().exists()) {
 			FileUtils.deleteDirectory(outputFolderPath.toFile());
 		}
