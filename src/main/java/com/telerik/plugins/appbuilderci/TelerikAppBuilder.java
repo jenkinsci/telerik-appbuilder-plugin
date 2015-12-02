@@ -18,6 +18,7 @@ import javax.servlet.ServletException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 
+import com.google.common.base.Joiner;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.config.ClientConfig;
@@ -234,7 +235,7 @@ public class TelerikAppBuilder extends Builder {
 		}
 		Files.createDirectory(outputFolderPath);
 
-		Object[] buildResultItems = this.getBuildObject(buildResult).getJSONArray("Items").stream().toArray();
+		Object[] buildResultItems = this.getBuildObject(buildResult).getJSONArray("Items").toArray();
 		
 		for(Object obj : buildResultItems)
 		{
@@ -315,7 +316,7 @@ public class TelerikAppBuilder extends Builder {
 			platforms.add("WP8");
 		}
 
-		buildData.put("Platform", String.join(",", platforms));
+		buildData.put("Platform", Joiner.on(",").join(platforms));
 		buildData.put("AcceptResults", "Url");
 		buildData.put("Configuration", this.configuration);
 
