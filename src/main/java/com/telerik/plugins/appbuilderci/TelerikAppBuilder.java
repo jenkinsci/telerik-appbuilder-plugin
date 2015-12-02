@@ -18,6 +18,7 @@ import javax.servlet.ServletException;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.UriBuilder;
 
+import com.google.common.base.Joiner;
 import com.sun.jersey.api.client.Client;
 import com.sun.jersey.api.client.ClientResponse;
 import com.sun.jersey.api.client.config.ClientConfig;
@@ -187,7 +188,9 @@ public class TelerikAppBuilder extends Builder {
 		Client client = getWebClient();
 
 		logger.println(
-				String.format("Start Building for %s", buildProperties.getJSONObject("Properties").get("Platform")));
+				String.format("Start Building for %s, Configuration: %s", 
+						buildProperties.getJSONObject("Properties").get("Platform"), 
+						buildProperties.getJSONObject("Properties").get("Configuration")));
 
 		StopWatch watch = new StopWatch();
 		watch.start();
@@ -226,13 +229,13 @@ public class TelerikAppBuilder extends Builder {
 
 	private boolean downloadBuildResults(JSONObject buildResult, String workspaceDir, final PrintStream logger)
 			throws IOException {
-		final Path outputFolderPath = Paths.get(workspaceDir, "BuildOutputs").toAbsolutePath();
+		final Path outputFolderPath = Paths.get(workspaceDir, Constants.OutputFolderName).toAbsolutePath();
 		if (outputFolderPath.toFile().exists()) {
 			FileUtils.deleteDirectory(outputFolderPath.toFile());
 		}
 		Files.createDirectory(outputFolderPath);
 
-		Object[] buildResultItems = this.getBuildObject(buildResult).getJSONArray("Items").stream().toArray();
+		Object[] buildResultItems = this.getBuildObject(buildResult).getJSONArray("Items").toArray();
 		
 		for(Object obj : buildResultItems)
 		{
@@ -313,7 +316,7 @@ public class TelerikAppBuilder extends Builder {
 			platforms.add("WP8");
 		}
 
-		buildData.put("Platform", String.join(",", platforms));
+		buildData.put("Platform", Joiner.on(",").join(platforms));
 		buildData.put("AcceptResults", "Url");
 		buildData.put("Configuration", this.configuration);
 
