@@ -20,7 +20,7 @@ public class ProjectFilesManager {
      	   public FileVisitResult visitFile(Path filePath, BasicFileAttributes attrs)
      	      throws IOException
      	   {
-              if(filePath.toString().contains(".abproject")){
+              if(filePath.toString().contains(Constants.ABProjectFileName)){
             	  projectFilePaths.add(filePath);
             	  return FileVisitResult.TERMINATE;
               }
