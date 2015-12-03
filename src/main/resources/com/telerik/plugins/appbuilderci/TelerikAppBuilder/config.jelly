@@ -40,6 +40,7 @@
 		</f:optionalBlock>
 		<f:optionalBlock 
             name="buildSettingsWP"
+            field="buildSettingsWP"
             title="Build for Windows Phone (Hybrid Only)" 
             checked="${instance.buildSettingsWP}"
             inline="true"

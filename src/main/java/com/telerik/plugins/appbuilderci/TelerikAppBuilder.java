@@ -26,7 +26,6 @@ import com.sun.jersey.api.client.config.DefaultClientConfig;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintStream;
@@ -159,25 +158,29 @@ public class TelerikAppBuilder extends Builder {
 		return this.uploadPackage(packageFilePath, logger) && this.build(projectRoot.toString(), logger);
 	}
 
-	private boolean uploadPackage(Path packageFilePath, PrintStream logger) throws FileNotFoundException {
+	private boolean uploadPackage(Path packageFilePath, PrintStream logger) throws IOException {
 		final File file = packageFilePath.toFile();
 		InputStream fileInStream = new FileInputStream(file);
 		String contentDisposition = "attachment; filename=\"" + file.getName() + "\"";
 		Client client = getWebClient();
-
-		ClientResponse uploadPacakgeResponse = client.resource(this.getServerBaseUrl())
-				.path(String.format("apps/%s/projects/importProject/%s", this.applicationId, Constants.ProjectName))
-				.accept(MediaType.APPLICATION_JSON)
-				.type(MediaType.APPLICATION_OCTET_STREAM)
-				.header("Content-Disposition", contentDisposition)
-				.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
-				.post(ClientResponse.class, fileInStream);
-
-		logger.println("Uploading, Response Code: " + uploadPacakgeResponse.getStatus());
-
-		boolean isUploadSuccessful = uploadPacakgeResponse.getStatus() == 204;
-		if (!isUploadSuccessful) {
-			logger.println("Uploading, Response: " + uploadPacakgeResponse.getEntity(String.class));
+		boolean isUploadSuccessful = false;
+		try{
+			ClientResponse uploadPacakgeResponse = client.resource(this.getServerBaseUrl())
+					.path(String.format("apps/%s/projects/importProject/%s", this.applicationId, Constants.ProjectName))
+					.accept(MediaType.APPLICATION_JSON)
+					.type(MediaType.APPLICATION_OCTET_STREAM)
+					.header("Content-Disposition", contentDisposition)
+					.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
+					.post(ClientResponse.class, fileInStream);
+	
+			isUploadSuccessful = uploadPacakgeResponse.getStatus() == 204;
+			if (!isUploadSuccessful) {
+				logger.println(String.format("Uploading, Response: %s", uploadPacakgeResponse.toString()));
+				logger.println(String.format("Response Body: %s", uploadPacakgeResponse.getEntity(String.class)));
+			}
+		}
+		finally{
+			client.destroy();
 		}
 		return isUploadSuccessful;
 	}
@@ -185,40 +188,44 @@ public class TelerikAppBuilder extends Builder {
 	private boolean build(String workspaceDir, PrintStream logger) throws IOException {
 		JSONObject buildProperties = getBuildProperties();		
 		Client client = getWebClient();
-		
-		logger.println(
-				String.format("Start Building for %s, Configuration: %s", 
-						buildProperties.getJSONObject("Properties").get("Platform"), 
-						buildProperties.getJSONObject("Properties").get("Configuration")));
-
-		StopWatch watch = new StopWatch();
-		watch.start();
-
-		ClientResponse response = client.resource(this.getServerBaseUrl())
-				.path(String.format("apps/%s/build/%s", this.applicationId, Constants.ProjectName))
-				.accept(MediaType.APPLICATION_JSON)
-				.type(MediaType.APPLICATION_JSON)
-				.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
-				.post(ClientResponse.class, buildProperties.toString());
-
-		watch.stop();
-
-		JSONObject buildResult = JSONObject.fromObject(response.getEntity(String.class));
-
-		boolean isBuildSuccessful = response.getStatus() == 200
-				&& this.getBuildObject(buildResult).getString("Status").equalsIgnoreCase("Success");
-
-		if (isBuildSuccessful) {
-			this.printBuildResult(buildResult, logger);
-			this.downloadBuildResults(buildResult, workspaceDir, logger);
-		} else if (buildResult.containsKey("Message")) {
-			logger.println(String.format("Error Message: %s", buildResult.getString("Message")));
-		} else {
-			logger.println(String.format("Error Message: %s", buildResult.toString()));
+		boolean isBuildSuccessful = false;
+		try{
+			logger.println(
+					String.format("Start Building for %s Configuration: %s", 
+							buildProperties.getJSONObject("Properties").get("Platform"), 
+							buildProperties.getJSONObject("Properties").get("Configuration")));
+	
+			StopWatch watch = new StopWatch();
+			watch.start();
+	
+			ClientResponse response = client.resource(this.getServerBaseUrl())
+					.path(String.format("apps/%s/build/%s", this.applicationId, Constants.ProjectName))
+					.accept(MediaType.APPLICATION_JSON)
+					.type(MediaType.APPLICATION_JSON)
+					.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
+					.post(ClientResponse.class, buildProperties.toString());
+	
+			watch.stop();
+	
+			JSONObject buildResult = JSONObject.fromObject(response.getEntity(String.class));
+	
+			isBuildSuccessful = response.getStatus() == 200
+					&& this.getBuildObject(buildResult).getString("Status").equalsIgnoreCase("Success");
+	
+			if (isBuildSuccessful) {
+				this.printBuildResult(buildResult, logger);
+				this.downloadBuildResults(buildResult, workspaceDir, logger);
+			} else if (buildResult.containsKey("Message")) {
+				logger.println(String.format("Error Message: %s", buildResult.getString("Message")));
+			} else {
+				logger.println(String.format("Error Message: %s", buildResult.toString()));
+			}
+	
+			logger.println(String.format("Build finished for %s seconds", watch.getTotalTimeSeconds()));
 		}
-
-		logger.println(String.format("Build finished for %s seconds", watch.getTotalTimeSeconds()));
-
+		finally{
+			client.destroy();
+		}
 		return isBuildSuccessful;
 	}
 
