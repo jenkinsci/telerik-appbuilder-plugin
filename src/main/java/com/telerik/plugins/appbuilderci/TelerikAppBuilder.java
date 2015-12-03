@@ -32,11 +32,10 @@ import java.io.InputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
 import java.util.List;
+import java.nio.charset.Charset;
 import java.nio.file.*;
 
 public class TelerikAppBuilder extends Builder {
-
-	private final String projectName = "JenkinsCI";
 	
 	private String applicationId;
 	private Secret accessToken;
@@ -125,8 +124,8 @@ public class TelerikAppBuilder extends Builder {
 	}
 	
 	private boolean validatePluginConfiguration() {
-		if (applicationId == null || projectName == null || accessToken == null || applicationId.isEmpty()
-				|| projectName.isEmpty() || Secret.toString(accessToken).isEmpty()) {
+		if (applicationId == null || accessToken == null || applicationId.isEmpty()
+				|| Secret.toString(accessToken).isEmpty()) {
 			return false;
 		}
 		return true;
@@ -167,7 +166,7 @@ public class TelerikAppBuilder extends Builder {
 		Client client = getWebClient();
 
 		ClientResponse uploadPacakgeResponse = client.resource(this.getServerBaseUrl())
-				.path(String.format("apps/%s/projects/importProject/%s", this.applicationId, this.projectName))
+				.path(String.format("apps/%s/projects/importProject/%s", this.applicationId, Constants.ProjectName))
 				.accept(MediaType.APPLICATION_JSON)
 				.type(MediaType.APPLICATION_OCTET_STREAM)
 				.header("Content-Disposition", contentDisposition)
@@ -184,9 +183,9 @@ public class TelerikAppBuilder extends Builder {
 	}
 
 	private boolean build(String workspaceDir, PrintStream logger) throws IOException {
-		JSONObject buildProperties = getBuildProperties();
+		JSONObject buildProperties = getBuildProperties();		
 		Client client = getWebClient();
-
+		
 		logger.println(
 				String.format("Start Building for %s, Configuration: %s", 
 						buildProperties.getJSONObject("Properties").get("Platform"), 
@@ -196,7 +195,7 @@ public class TelerikAppBuilder extends Builder {
 		watch.start();
 
 		ClientResponse response = client.resource(this.getServerBaseUrl())
-				.path(String.format("apps/%s/build/%s", this.applicationId, this.projectName))
+				.path(String.format("apps/%s/build/%s", this.applicationId, Constants.ProjectName))
 				.accept(MediaType.APPLICATION_JSON)
 				.type(MediaType.APPLICATION_JSON)
 				.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
@@ -229,6 +228,7 @@ public class TelerikAppBuilder extends Builder {
 
 	private boolean downloadBuildResults(JSONObject buildResult, String workspaceDir, final PrintStream logger)
 			throws IOException {
+		final JSONObject projectProperties = getProjectProperties(workspaceDir);
 		final Path outputFolderPath = Paths.get(workspaceDir, Constants.OutputFolderName).toAbsolutePath();
 		if (outputFolderPath.toFile().exists()) {
 			FileUtils.deleteDirectory(outputFolderPath.toFile());
@@ -236,12 +236,12 @@ public class TelerikAppBuilder extends Builder {
 		Files.createDirectory(outputFolderPath);
 
 		Object[] buildResultItems = this.getBuildObject(buildResult).getJSONArray("Items").toArray();
-		
+
+		String fileName = projectProperties.getString("ProjectName");
 		for(Object obj : buildResultItems)
 		{
 			JSONObject item = (JSONObject) obj;
 			String itemUrl = item.getString("FullPath");
-			String fileName = item.getString("Filename");
 			String extension = item.getString("Extension");
 			String pathFormat = item.getString("Format");
 
@@ -254,7 +254,7 @@ public class TelerikAppBuilder extends Builder {
 				itemUrl = UriBuilder.fromPath(TelerikAppBuilder.this.getServerBaseUrl())
 									.path(String.format("apps/%s/files/%s/%s", 
 											TelerikAppBuilder.this.applicationId, 
-											TelerikAppBuilder.this.projectName, 
+											Constants.ProjectName, 
 											itemUrl.replace('\\', '/')))
 									.build()
 									.toString();
@@ -326,6 +326,14 @@ public class TelerikAppBuilder extends Builder {
 		return properties;
 	}
 
+	private JSONObject getProjectProperties(String workspaceDir) throws IOException {
+        Path projectDir = new ProjectFilesManager().getProjectDir(workspaceDir);
+		Path projectFileName = Paths.get(projectDir.toString(), Constants.ABProjectFileName);
+		List<String> fileLines = Files.readAllLines(projectFileName, Charset.defaultCharset());
+						
+		return JSONObject.fromObject(Joiner.on("").join(fileLines));
+	}
+	
 	@Override
 	public DescriptorImpl getDescriptor() {
 		return (DescriptorImpl) super.getDescriptor();
