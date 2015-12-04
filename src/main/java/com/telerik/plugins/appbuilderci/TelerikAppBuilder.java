@@ -251,6 +251,7 @@ public class TelerikAppBuilder extends Builder {
 			String itemUrl = item.getString("FullPath");
 			String extension = item.getString("Extension");
 			String pathFormat = item.getString("Format");
+			String platform = item.getString("Platform");
 
 			int querySymbolIndex = extension.indexOf("?");
 			if (querySymbolIndex > 0) {
@@ -267,23 +268,24 @@ public class TelerikAppBuilder extends Builder {
 									.toString();
 			}
 
-			TelerikAppBuilder.this.downloadAppPackage(outputFolderPath, itemUrl, fileName, extension, logger);
+			TelerikAppBuilder.this.downloadAppPackage(outputFolderPath, itemUrl, fileName, extension, platform, logger);
 		}
 		
 		return true;
 	}
 
-	private void downloadAppPackage(Path outputFolderPath, String itemUrl, String fileName, String extension, PrintStream logger) {
+	private void downloadAppPackage(Path outputFolderPath, String itemUrl, String fileName, String extension, String platform, PrintStream logger) {
 		Client client = getWebClient();
-		try {
-			ClientResponse response = client.resource(itemUrl)
-					.accept(MediaType.APPLICATION_OCTET_STREAM)
-					.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
-					.get(ClientResponse.class);
-
-			logger.println(String.format("Downloaded Status: %s, Url: %s, Ext: %s,", response.getStatus(), itemUrl, extension));
+		ClientResponse response = client.resource(itemUrl)
+				.accept(MediaType.APPLICATION_OCTET_STREAM)
+				.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
+				.get(ClientResponse.class);
+		
+			logger.println(String.format("Request Status: %s, Platform: %s, Url: %s", 
+					response.getStatus(), platform, itemUrl.toString()));
+			
 			InputStream is = response.getEntityInputStream();
-			if (is != null) {
+			if (is != null && response.getStatus() < 400) {
 				Path destinationFilePath = Paths.get(outputFolderPath.toString(), 
 						String.format("%s%s", fileName, extension)).toAbsolutePath();
 				File downloadFile = new File(destinationFilePath.toString());
@@ -294,9 +296,9 @@ public class TelerikAppBuilder extends Builder {
 					e.printStackTrace();
 				}
 			}
-		} finally {
-			client.destroy();
-		}
+			else {
+				logger.println(String.format("Response: %s", response.getEntity(String.class)));
+			}
 	}
 
 	private void printBuildResult(JSONObject buildResult, PrintStream logger) {
@@ -324,7 +326,6 @@ public class TelerikAppBuilder extends Builder {
 		}
 
 		buildData.put("Platform", Joiner.on(",").join(platforms));
-		buildData.put("AcceptResults", "Url");
 		buildData.put("Configuration", this.configuration);
 
 		JSONObject properties = new JSONObject();
