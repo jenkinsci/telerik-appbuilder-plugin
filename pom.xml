@@ -10,7 +10,7 @@
   </parent>
   
   <groupId>com.telerik.plugins</groupId>
-  <artifactId>appbuilder-ci</artifactId>
+  <artifactId>telerik-appbuilder-plugin</artifactId>
   <version>1.0</version>
   <packaging>hpi</packaging>
 
