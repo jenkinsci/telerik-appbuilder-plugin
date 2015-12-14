@@ -14,8 +14,8 @@
   <version>1.0</version>
   <packaging>hpi</packaging>
 
-  <name>Telerik AppBuilder CI Plugin</name>
-  <description>TODO</description>
+  <name>Telerik AppBuilder Plugin</name>
+  <description>This plugin provides a simple way for AppBuilder developers to execute cloud builds in a CI environment</description>
   <url>https://wiki.jenkins-ci.org/display/JENKINS/TODO+Plugin</url>
   <licenses>
     <license>
