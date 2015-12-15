@@ -23,6 +23,12 @@
       <url>https://opensource.org/licenses/Apache-2.0</url>
     </license>
   </licenses>
+  <scm>
+    <connection>scm:git:git://github.com/jenkinsci/telerik-appbuilder-plugin.git</connection>
+    <developerConnection>scm:git:git@github.com:jenkinsci/telerik-appbuilder-plugin.git</developerConnection>
+    <url>http://github.com/jenkinsci/telerik-appbuilder-plugin</url>
+    <tag>HEAD</tag>
+  </scm>
   <repositories>
     <repository>
       <id>repo.jenkins-ci.org</id>
