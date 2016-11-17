@@ -248,6 +248,9 @@ public class TelerikAppBuilder extends Builder {
 		for(Object obj : buildResultItems)
 		{
 			JSONObject item = (JSONObject) obj;
+                        if (!"LocalPath".equals(item.getString("Format"))) {
+                            break;
+                        }
 			String itemUrl = item.getString("FullPath");
 			String extension = item.getString("Extension");
 			String pathFormat = item.getString("Format");
