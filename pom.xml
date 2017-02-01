@@ -10,7 +10,7 @@
   
   <groupId>com.telerik.plugins</groupId>
   <artifactId>telerik-appbuilder-plugin</artifactId>
-  <version>1.3-SNAPSHOT</version>
+  <version>1.3</version>
   <packaging>hpi</packaging>
 
   <name>Telerik AppBuilder Plugin</name>
@@ -26,7 +26,7 @@
     <connection>scm:git:git://github.com/jenkinsci/telerik-appbuilder-plugin.git</connection>
     <developerConnection>scm:git:git@github.com:jenkinsci/telerik-appbuilder-plugin.git</developerConnection>
     <url>http://github.com/jenkinsci/telerik-appbuilder-plugin</url>
-    <tag>HEAD</tag>
+    <tag>telerik-appbuilder-plugin-1.3</tag>
   </scm>
   <repositories>
     <repository>
