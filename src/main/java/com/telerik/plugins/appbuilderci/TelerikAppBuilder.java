@@ -35,7 +35,7 @@ import java.nio.charset.Charset;
 import java.nio.file.*;
 
 public class TelerikAppBuilder extends Builder {
-	
+
 	private String applicationId;
 	private Secret accessToken;
 	private String configuration;
@@ -61,7 +61,7 @@ public class TelerikAppBuilder extends Builder {
 	/**
 	 * We'll use this from the <tt>config.jelly</tt>.
 	 */
-	
+
 	public String getApplicationId() {
 		return applicationId;
 	}
@@ -121,7 +121,7 @@ public class TelerikAppBuilder extends Builder {
 	private String getServerBaseUrl() {
 		return getDescriptor().getServerBaseURI();
 	}
-	
+
 	private boolean validatePluginConfiguration() {
 		if (applicationId == null || accessToken == null || applicationId.isEmpty()
 				|| Secret.toString(accessToken).isEmpty()) {
@@ -136,7 +136,7 @@ public class TelerikAppBuilder extends Builder {
 		client.setChunkedEncodingSize(1024);
 		return client;
 	}
-	
+
 	@Override
 	public boolean perform(AbstractBuild build, Launcher launcher, BuildListener listener)
 			throws IOException, InterruptedException {
@@ -147,10 +147,15 @@ public class TelerikAppBuilder extends Builder {
 		FilePath projectRoot = build.getWorkspace();
 		logger.println("projectRoot = " + projectRoot);
 
+		if(projectRoot == null){
+			logger.println("ProjectRoot not found!");
+			return false;
+		}
+
 		PackageManager pm = new PackageManager(logger);
 		Path packageFilePath = pm.createPackage(projectRoot.toString());
 
-		if (!validatePluginConfiguration()) {
+		if (packageFilePath != null && !validatePluginConfiguration()) {
 			logger.println("Please configure Telerik AppBuilder CI Plugin");
 			return false;
 		}
@@ -160,11 +165,13 @@ public class TelerikAppBuilder extends Builder {
 
 	private boolean uploadPackage(Path packageFilePath, PrintStream logger) throws IOException {
 		final File file = packageFilePath.toFile();
-		InputStream fileInStream = new FileInputStream(file);
 		String contentDisposition = "attachment; filename=\"" + file.getName() + "\"";
-		Client client = getWebClient();
 		boolean isUploadSuccessful = false;
+		InputStream fileInStream = null;
+		Client client = null;
 		try{
+			fileInStream = new FileInputStream(file);
+			client = getWebClient();
 			ClientResponse uploadPacakgeResponse = client.resource(this.getServerBaseUrl())
 					.path(String.format("apps/%s/projects/importProject/%s", this.applicationId, Constants.ProjectName))
 					.accept(MediaType.APPLICATION_JSON)
@@ -172,7 +179,7 @@ public class TelerikAppBuilder extends Builder {
 					.header("Content-Disposition", contentDisposition)
 					.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
 					.post(ClientResponse.class, fileInStream);
-	
+
 			isUploadSuccessful = uploadPacakgeResponse.getStatus() == 204;
 			if (!isUploadSuccessful) {
 				logger.println(String.format("Uploading, Response: %s", uploadPacakgeResponse.toString()));
@@ -180,38 +187,43 @@ public class TelerikAppBuilder extends Builder {
 			}
 		}
 		finally{
-			client.destroy();
+			if(fileInStream != null){
+				fileInStream.close();
+			}
+			if(client != null){
+				client.destroy();
+			}
 		}
 		return isUploadSuccessful;
 	}
 
 	private boolean build(String workspaceDir, PrintStream logger) throws IOException {
-		JSONObject buildProperties = getBuildProperties();		
+		JSONObject buildProperties = getBuildProperties();
 		Client client = getWebClient();
 		boolean isBuildSuccessful = false;
 		try{
 			logger.println(
-					String.format("Start Building for %s Configuration: %s", 
-							buildProperties.getJSONObject("Properties").get("Platform"), 
+					String.format("Start Building for %s Configuration: %s",
+							buildProperties.getJSONObject("Properties").get("Platform"),
 							buildProperties.getJSONObject("Properties").get("Configuration")));
-	
+
 			StopWatch watch = new StopWatch();
 			watch.start();
-	
+
 			ClientResponse response = client.resource(this.getServerBaseUrl())
 					.path(String.format("apps/%s/build/%s", this.applicationId, Constants.ProjectName))
 					.accept(MediaType.APPLICATION_JSON)
 					.type(MediaType.APPLICATION_JSON)
 					.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
 					.post(ClientResponse.class, buildProperties.toString());
-	
+
 			watch.stop();
-	
+
 			JSONObject buildResult = JSONObject.fromObject(response.getEntity(String.class));
-	
+
 			isBuildSuccessful = response.getStatus() == 200
 					&& this.getBuildObject(buildResult).getString("Status").equalsIgnoreCase("Success");
-	
+
 			if (isBuildSuccessful) {
 				this.printBuildResult(buildResult, logger);
 				this.downloadBuildResults(buildResult, workspaceDir, logger);
@@ -220,7 +232,7 @@ public class TelerikAppBuilder extends Builder {
 			} else {
 				logger.println(String.format("Error Message: %s", buildResult.toString()));
 			}
-	
+
 			logger.println(String.format("Build finished for %s seconds", watch.getTotalTimeSeconds()));
 		}
 		finally{
@@ -263,9 +275,9 @@ public class TelerikAppBuilder extends Builder {
 
 			if (pathFormat.equalsIgnoreCase("LocalPath")) {
 				itemUrl = UriBuilder.fromPath(TelerikAppBuilder.this.getServerBaseUrl())
-									.path(String.format("apps/%s/files/%s/%s", 
-											TelerikAppBuilder.this.applicationId, 
-											Constants.ProjectName, 
+									.path(String.format("apps/%s/files/%s/%s",
+											TelerikAppBuilder.this.applicationId,
+											Constants.ProjectName,
 											itemUrl.replace('\\', '/')))
 									.build()
 									.toString();
@@ -273,7 +285,7 @@ public class TelerikAppBuilder extends Builder {
 
 			TelerikAppBuilder.this.downloadAppPackage(outputFolderPath, itemUrl, fileName, extension, platform, logger);
 		}
-		
+
 		return true;
 	}
 
@@ -283,13 +295,13 @@ public class TelerikAppBuilder extends Builder {
 				.accept(MediaType.APPLICATION_OCTET_STREAM)
 				.header("Authorization", "ApplicationToken " + Secret.toString(accessToken))
 				.get(ClientResponse.class);
-		
-			logger.println(String.format("Request Status: %s, Platform: %s, Url: %s", 
+
+			logger.println(String.format("Request Status: %s, Platform: %s, Url: %s",
 					response.getStatus(), platform, itemUrl.toString()));
-			
+
 			InputStream is = response.getEntityInputStream();
 			if (is != null && response.getStatus() < 400) {
-				Path destinationFilePath = Paths.get(outputFolderPath.toString(), 
+				Path destinationFilePath = Paths.get(outputFolderPath.toString(),
 						String.format("%s%s", fileName, extension)).toAbsolutePath();
 				File downloadFile = new File(destinationFilePath.toString());
 				logger.println(String.format("Save File to %s", downloadFile.toPath()));
@@ -341,10 +353,10 @@ public class TelerikAppBuilder extends Builder {
         Path projectDir = new ProjectFilesManager().getProjectDir(workspaceDir);
 		Path projectFileName = Paths.get(projectDir.toString(), Constants.ABProjectFileName);
 		List<String> fileLines = Files.readAllLines(projectFileName, Charset.defaultCharset());
-						
+
 		return JSONObject.fromObject(Joiner.on("").join(fileLines));
 	}
-	
+
 	@Override
 	public DescriptorImpl getDescriptor() {
 		return (DescriptorImpl) super.getDescriptor();
@@ -354,7 +366,7 @@ public class TelerikAppBuilder extends Builder {
 	public static final class DescriptorImpl extends BuildStepDescriptor<Builder> {
 
 		private String serverBaseURI = "https://platform.telerik.com/appbuilder/api";
-		
+
 		public DescriptorImpl() {
 			load();
 		}
@@ -366,7 +378,7 @@ public class TelerikAppBuilder extends Builder {
 		public boolean isApplicable(Class<? extends AbstractProject> aClass) {
 			return true;
 		}
-		
+
 		public String getServerBaseURI() {
 	        return this.serverBaseURI;
 	    }
