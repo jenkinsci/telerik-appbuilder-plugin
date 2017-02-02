@@ -15,7 +15,7 @@
 
   <name>Telerik AppBuilder Plugin</name>
   <description>This plugin provides a simple way for AppBuilder developers to execute cloud builds in a CI environment</description>
-  <url>https://wiki.jenkins-ci.org/display/JENKINS/TODO+Plugin</url>
+  <url>http://github.com/jenkinsci/telerik-appbuilder-plugin</url>
   <licenses>
     <license>
       <name>Apache License 2.0</name>
