@@ -1,12 +1,12 @@
-# AppBuilder Jenkins Plugin
+# Progress Telerik AppBuilder Jenkins Plugin
 
 ## Overview
-This plugin provides a simple way for AppBuilder developers to execute cloud builds in a CI environment
+This plugin provides a simple way for Progress Telerik AppBuilder developers to execute cloud builds in a CI environment
 
 ### Dependencies
 * [Apache Maven][maven] 3.0.4 or later
 
-### Run in Docker 
+### Run in Docker
 -------------------------
 ```shell
   $ docker run --name ab-jenkins -p 8080:8080 -p 50000:50000 -v /{ABSOLUTE_PATH}/jenkins_home:/var/jenkins_home -v /{ABSOLUTE_PATH}/telerik-appbuilder-plugin:/var/telerik-appbuilder-plugin telerikappbuilder/jenkins-appbuilder-plugin
