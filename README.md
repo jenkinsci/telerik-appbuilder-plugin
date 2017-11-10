@@ -1,3 +1,5 @@
+> ## Progress will discontinue Telerik Platform on May 10th, 2018. -> [Learn more](https://www.telerik.com/platform-next-level)
+
 # Progress Telerik AppBuilder Jenkins Plugin
 
 ## Overview
